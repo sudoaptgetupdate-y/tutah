@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @font-face {
+            font-family: 'TH Sarabun IT 9';
+            src: local('TH Sarabun IT 9');
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            width: 720px;
+            height: 1040px;
+            font-family: '{{ font_family }}', 'TH Sarabun IT 9', sans-serif;
+            background-image: url('{{ bg_image }}');
+            background-size: 720px 1040px;
+            background-position: top left;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        
+        /* 1. กล่องชื่อหน่วยงาน */
+        .header {
+            position: absolute;
+            top: {{ header_pos_y }}px; 
+            left: {{ header_pad_l }}px;
+            right: {{ header_pad_r }}px;
+            
+            min-height: {{ header_height }}px;
+            padding: 5px 15px;
+            box-sizing: border-box;
+            background-color: {{ header_bg_color }};
+            border-radius: {% if header_border_shape == 'สี่เหลี่ยม' %}0px{% else %}10px{% endif %};
+            
+            font-family: '{{ header_font }}', sans-serif;
+            color: {{ header_color }};
+            font-size: {{ header_size }}px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            
+            {% if header_align == 'ซ้าย' %}
+            justify-content: flex-start;
+            text-align: left;
+            {% elif header_align == 'ขวา' %}
+            justify-content: flex-end;
+            text-align: right;
+            {% else %}
+            justify-content: center;
+            text-align: center;
+            {% endif %}
+            
+            z-index: 10;
+        }
+        
+        /* 2. หัวข้อกิจกรรม (Title) */
+        .title {
+            position: absolute;
+            top: {{ title_pos_y }}px; 
+            left: {{ title_pad_l }}px;
+            right: {{ title_pad_r }}px;
+            
+            height: {{ title_height }}px;
+            padding: 0 15px;
+            box-sizing: border-box;
+            background-color: {{ title_bg_color }};
+            border-radius: {% if title_border_shape == 'สี่เหลี่ยม' %}0px{% else %}10px{% endif %};
+            
+            font-family: '{{ title_font }}', sans-serif;
+            color: {{ title_color }};
+            font-size: {{ title_size }}px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            
+            {% if title_align == 'ซ้าย' %}
+            justify-content: flex-start;
+            text-align: left;
+            {% elif title_align == 'ขวา' %}
+            justify-content: flex-end;
+            text-align: right;
+            {% else %}
+            justify-content: center;
+            text-align: center;
+            {% endif %}
+            
+            z-index: 10;
+        }
+        
+        /* 3. กล่องรูปภาพ */
+        .image-grid {
+            position: absolute;
+            top: {{ image_pos_y }}px; 
+            left: {{ image_pos_x }}px; 
+            width: {{ image_width }}px; 
+            height: {{ image_height }}px; 
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; 
+            z-index: 10;
+        }
+        
+        .image-grid img {
+            object-fit: cover; /* ตัดรูปให้พอดีกรอบเป๊ะๆ */
+            border-radius: {% if image_border_shape == 'สี่เหลี่ยม' %}0px{% else %}15px{% endif %}; /* ขอบมนหรือสี่เหลี่ยม */
+            border: {{ image_border_width }}px solid {{ image_border_color }}; /* กรอบสีและขนาดตามฟอร์ม */
+            box-sizing: border-box; /* สำคัญ: เพื่อไม่ให้ขอบทำให้รูปภาพขยายล้นกรอบ */
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.15); /* เพิ่มมิติ */
+        }
+        
+        .placeholder-img {
+            border-radius: {% if image_border_shape == 'สี่เหลี่ยม' %}0px{% else %}15px{% endif %};
+            box-sizing: border-box;
+            background-color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 24px;
+            font-family: '{{ font_family }}', sans-serif;
+            font-weight: bold;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* 4. กล่องเนื้อหารายงาน */
+        .report-text {
+            position: absolute;
+            top: {{ image_pos_y + image_height + 20 }}px; /* เลื่อนลงอัตโนมัติเมื่อรูปสูงขึ้นหรือย้ายตำแหน่ง */
+            left: 50px; 
+            width: 620px; 
+            height: {{ 940 - (image_pos_y + image_height + 20) }}px; /* ลดความสูงกล่องข้อความลงอัตโนมัติ เพื่อไม่ให้ล้นทับ Footer */
+            background-color: {{ content_bg }}; 
+            border: {{ content_border_width }}px solid {{ content_border_color }};
+            border-radius: {% if content_border_shape == 'สี่เหลี่ยม' %}0px{% else %}15px{% endif %};
+            padding: 15px;
+            font-size: {{ font_size }}px;
+            font-family: '{{ font_family }}', sans-serif;
+            line-height: 1.6;
+            text-align: justify;
+            color: {{ content_text_color }};
+            overflow: hidden; /* คำสั่งตัดข้อความที่ล้นออกไปทิ้ง */
+            box-sizing: border-box;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.1); /* เพิ่มมิติเบาๆ */
+            z-index: 10;
+        }
+        
+        /* 5. กล่องวันที่ */
+        .date-stamp {
+            position: absolute;
+            top: 940px;
+            right: 50px;
+            background-color: transparent;
+            font-size: 16px;
+            color: #666;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {{ header_text }}
+    </div>
+
+    <div class="title">{{ title_text }}</div>
+    
+    <div class="image-grid">
+        {% if images %}
+            {% set count = images|length %}
+            {% for img in images %}
+            <img src="data:image/jpeg;base64,{{ img }}" alt="Activity" 
+                style="{% if count == 1 %}width: 100%; height: 100%;{% elif count == 2 %}width: calc(50% - 7.5px); height: 100%;{% elif count == 3 %}width: calc(33.33% - 10px); height: 100%;{% else %}width: calc(50% - 7.5px); height: calc(50% - 7.5px);{% endif %}">
+            {% endfor %}
+        {% else %}
+            <!-- กรอบจำลองสำหรับ Realtime Preview เมื่อยังไม่อัปโหลดรูป -->
+            <div class="placeholder-img" style="border: {{ image_border_width }}px solid {{ image_border_color }}; width: calc(50% - 7.5px); height: 100%;"><span>รอรูปภาพ...</span></div>
+            <div class="placeholder-img" style="border: {{ image_border_width }}px solid {{ image_border_color }}; width: calc(50% - 7.5px); height: 100%;"><span>รอรูปภาพ...</span></div>
+        {% endif %}
+    </div>
+    
+    <div class="report-text">
+        {{ content | safe }}
+    </div>
+    
+    <div class="date-stamp">วันที่ {{ report_date }}</div>
+</body>
+</html>

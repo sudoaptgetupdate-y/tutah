@@ -1,0 +1,11 @@
+streamlit
+streamlit-authenticator
+psycopg2-binary
+google-generativeai
+playwright
+jinja2
+python-dotenv
+pyyaml
+requests
+bcrypt
+streamlit-quill
