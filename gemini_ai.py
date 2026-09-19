@@ -13,7 +13,7 @@ def generate_report_content(api_key, system_instruction, title, keywords):
             system_instruction = "คุณเป็นเจ้าหน้าที่ประชาสัมพันธ์ของหน่วยงานตรวจคนเข้าเมือง ให้ช่วยเขียนบทความข่าวประชาสัมพันธ์ภาษาไทยจากหัวข้อและคำสำคัญที่ให้มา โดยใช้ภาษาที่เป็นทางการ สละสลวย และถูกต้องตามหลักภาษาไทย"
             
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-flash-latest",
             system_instruction=system_instruction
         )
         

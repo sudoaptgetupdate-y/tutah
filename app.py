@@ -16,6 +16,30 @@ import json
 import bcrypt
 import re
 
+DEFAULT_SYSTEM_INSTRUCTION = """คุณคือเจ้าหน้าที่ตำรวจ/ฝ่ายอำนวยการของหน่วยงานราชการไทย (สังกัดสำนักงานตรวจคนเข้าเมือง) 
+หน้าที่ของคุณคือการนำ "หัวข้อกิจกรรม" และ "คำสำคัญ/รายละเอียด" ที่ผู้ใช้งานให้มา นำมาเรียบเรียงใหม่ให้เป็น "รายงานการปฏิบัติงานประจำวัน" 
+
+กรุณาปฏิบัติตามข้อกำหนดต่อไปนี้อย่างเคร่งครัด:
+1. โทนเสียงและภาษา: ใช้ "ภาษาราชการไทย" ที่เป็นทางการ ถูกต้องตามระเบียบงานสารบรรณ สุภาพ กระชับ และได้ใจความสมบูรณ์ 
+2. การเลือกใช้คำ: ใช้คำศัพท์ทางการหรือศัพท์ตำรวจ (เช่น ดำเนินการ, ตรวจสอบ, บูรณาการกำลัง, ลงพื้นที่, กวดขัน, ตามข้อสั่งการของผู้บังคับบัญชา, เพื่อโปรดทราบ ฯลฯ) ห้ามใช้ภาษาพูดเด็ดขาด
+3. การเรียบเรียง: 
+   - นำข้อมูลคีย์เวิร์ดมาผูกเรื่องราวให้ต่อเนื่องและลื่นไหล
+   - แบ่งเป็นย่อหน้าให้อ่านง่าย (แนะนำ 1-2 ย่อหน้า) 
+   - หากมีข้อมูลสถานที่ เวลา หรือตัวเลข ให้ระบุให้ชัดเจน
+4. ข้อควรระวัง: 
+   - ห้ามแต่งเติมข้อมูลเหตุการณ์ บุคคล หรือตัวเลข ที่ไม่ได้ระบุไว้ในคำสำคัญ 
+   - อนุญาตให้เพิ่มคำเชื่อมประโยค หรือวลีขยายความที่เป็นมาตรฐานของภาษาราชการได้ เพื่อให้รายงานมีความสมบูรณ์
+   - ไม่ต้องใส่หัวข้อซ้ำ เนื่องจากระบบมีป้ายหัวข้อแยกต่างหากอยู่แล้ว ให้เขียนเฉพาะ "เนื้อหา" เท่านั้น"""
+
+CUSTOM_TOOLBAR = [
+    ["bold", "italic", "underline", "strike"],
+    [{"list": "ordered"}, {"list": "bullet"}],
+    [{"indent": "-1"}, {"indent": "+1"}],
+    [{"color": []}, {"background": []}],
+    [{"align": []}],
+    ["clean"]
+]
+
 STYLE_FILE = "style_defaults.json"
 
 def load_style_defaults():
@@ -155,10 +179,11 @@ if authentication_status:
             
             with st.container(border=True):
                 st.markdown("#### ✍️ เนื้อหารายงาน")
-                keywords = st.text_area("คำสำคัญ/รายละเอียดเพิ่มเติม (สำหรับให้ AI ช่วยเขียน)", placeholder="ใส่รายละเอียดสั้นๆ เพื่อให้ AI แต่งบทความ...")
+                default_kw = get_def("last_keywords", "ชุดสืบสวน ตม.นครศรีธรรมราช, บูรณาการจัดหางานจังหวัด, ตรวจโรงงานน้ำแข็ง XXX อ.ทุ่งสง, ตรวจแรงงานพม่า 15 คน, ถูกต้องทั้งหมด ไม่พบทำผิดกฎหมาย, แนะนำข้อกฎหมาย ม.38 ให้เจ้าของโรงงาน")
+                keywords = st.text_area("คำสำคัญ/รายละเอียดเพิ่มเติม (สำหรับให้ AI ช่วยเขียน)", value=default_kw)
                 generate_ai = st.button("🤖 ให้ AI ช่วยแต่งเนื้อหา (คลิกหลังจากพิมพ์คำสำคัญเสร็จ)")
                 st.markdown("---")
-                content = st_quill(value=st.session_state['report_content'], placeholder="เนื้อหารายงาน...", html=True)
+                content = st_quill(value=st.session_state['report_content'], placeholder="เนื้อหารายงาน...", html=True, toolbar=CUSTOM_TOOLBAR)
         
             submit_btn = st.button("💾 บันทึกและสร้างภาพรายงาน", type="primary", use_container_width=True)
 
@@ -166,17 +191,21 @@ if authentication_status:
                 if not title_text or not keywords:
                     st.warning("กรุณากรอกหัวข้อและคำสำคัญก่อน")
                 else:
+                    style_defaults['last_keywords'] = keywords
+                    save_style_defaults(style_defaults)
                     with st.spinner("กำลังให้ AI แต่งเนื้อหา..."):
                         settings = get_user_settings(user_id)
                         content_generated = generate_report_content(
                             settings.get('gemini_api_key', ''),
-                            settings.get('ai_system_instruction', ''),
+                            settings.get('ai_system_instruction') or DEFAULT_SYSTEM_INSTRUCTION,
                             title_text,
                             keywords
                         )
                         st.session_state['report_content'] = content_generated
                         st.rerun()
             elif submit_btn:
+                style_defaults['last_keywords'] = keywords
+                save_style_defaults(style_defaults)
                 with st.spinner("กำลังบันทึกและสร้างภาพ..."):
                     # Save files
                     image_paths = []
@@ -665,10 +694,11 @@ if authentication_status:
                 
                 with st.container(border=True):
                     st.markdown("#### ✍️ เนื้อหารายงาน")
-                    keywords = st.text_area("คำสำคัญ/รายละเอียดเพิ่มเติม (สำหรับ AI)", placeholder="ใส่รายละเอียดสั้นๆ เพื่อให้ AI แต่งบทความ...", key="edit_keywords")
+                    default_kw_edit = get_def("last_keywords", "ชุดสืบสวน ตม.นครศรีธรรมราช, บูรณาการจัดหางานจังหวัด, ตรวจโรงงานน้ำแข็ง XXX อ.ทุ่งสง, ตรวจแรงงานพม่า 15 คน, ถูกต้องทั้งหมด ไม่พบทำผิดกฎหมาย, แนะนำข้อกฎหมาย ม.38 ให้เจ้าของโรงงาน")
+                    keywords = st.text_area("คำสำคัญ/รายละเอียดเพิ่มเติม (สำหรับ AI)", value=default_kw_edit, key="edit_keywords")
                     generate_ai = st.button("🤖 ให้ AI ช่วยแต่งเนื้อหาใหม่", key="edit_ai")
                     st.markdown("---")
-                    content = st_quill(value=st.session_state['edit_report_content'], placeholder="เนื้อหารายงาน...", html=True, key="edit_quill")
+                    content = st_quill(value=st.session_state['edit_report_content'], placeholder="เนื้อหารายงาน...", html=True, toolbar=CUSTOM_TOOLBAR, key="edit_quill")
             
                 submit_btn = st.button("💾 บันทึกการแก้ไข", type="primary", use_container_width=True, key="edit_submit")
 
@@ -676,16 +706,20 @@ if authentication_status:
                     if not title_text or not keywords:
                         st.warning("กรุณากรอกหัวข้อและคำสำคัญก่อน")
                     else:
+                        style_defaults['last_keywords'] = keywords
+                        save_style_defaults(style_defaults)
                         with st.spinner("กำลังให้ AI แต่งเนื้อหา..."):
                             content_generated = generate_report_content(
                                 settings.get('gemini_api_key', ''),
-                                settings.get('ai_system_instruction', ''),
+                                settings.get('ai_system_instruction') or DEFAULT_SYSTEM_INSTRUCTION,
                                 title_text,
                                 keywords
                             )
                             st.session_state['edit_report_content'] = content_generated
                             st.rerun()
                 elif submit_btn:
+                    style_defaults['last_keywords'] = keywords
+                    save_style_defaults(style_defaults)
                     with st.spinner("กำลังบันทึกและสร้างภาพใหม่..."):
                         # Handle images
                         image_paths = rep['image_paths']
@@ -962,7 +996,8 @@ if authentication_status:
             gemini_key = st.text_input("Gemini API Key", value=settings['gemini_api_key'] or "", type="password")
             bot_token = st.text_input("Telegram Bot Token", value=settings['telegram_bot_token'] or "", type="password")
             chat_id = st.text_input("Telegram Chat ID", value=settings['telegram_chat_id'] or "")
-            system_inst = st.text_area("คำสั่งควบคุม AI (System Instruction)", value=settings['ai_system_instruction'] or "", height=150)
+            current_sys_inst = settings['ai_system_instruction'] if settings['ai_system_instruction'] else DEFAULT_SYSTEM_INSTRUCTION
+            system_inst = st.text_area("คำสั่งควบคุม AI (System Instruction)", value=current_sys_inst, height=300)
             
             save_settings = st.form_submit_button("บันทึกการตั้งค่า")
             

@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+        
         @font-face {
             font-family: 'TH Sarabun IT 9';
-            src: local('TH Sarabun IT 9');
+            src: local('TH Sarabun IT 9'), local('THSarabunIT9'), local('TH Sarabun New'), local('THSarabunNew'), local('TH SarabunPSK'), local('THSarabunPSK');
         }
         body {
             margin: 0;
             padding: 0;
             width: 720px;
             height: 1040px;
-            font-family: '{{ font_family }}', 'TH Sarabun IT 9', sans-serif;
+            font-family: '{{ font_family }}', 'TH Sarabun IT 9', 'TH Sarabun New', 'Sarabun', sans-serif;
             background-image: url('{{ bg_image }}');
             background-size: 720px 1040px;
             background-position: top left;
